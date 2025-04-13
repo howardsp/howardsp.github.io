@@ -1,0 +1,12 @@
+BEGIN:VCARD
+VERSION:3.0
+FN:Howard Spector
+N:Spector;Howard;;;
+TITLE:Managing Director, Head of Architecture, Prolific Inventor
+ORG:JPMorgan Chase
+EMAIL;TYPE=WORK:howard.spector@chase.com
+EMAIL;TYPE=HOME:howardsp@chase.com
+TEL;TYPE=CELL:+18563718081
+URL;TYPE=linkedin:https://www.linkedin.com/in/howardsp
+NOTE:.
+END:VCARD
