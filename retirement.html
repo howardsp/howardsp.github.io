@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retirement, Legacy & Estate Forecast — Monte Carlo Simulator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:linear-gradient(180deg,#080b12 0%,#0f1320 50%,#080b12 100%);color:#c8d6e5;font-family:'DM Sans',sans-serif;padding:32px 20px}
+.wrap{max-width:940px;margin:0 auto}
+h1{font-family:'Playfair Display',serif;font-size:34px;font-weight:800;color:#e8f0f8;text-align:center;margin:0}
+.sub{font-size:11px;letter-spacing:4px;color:#4a6080;font-family:'DM Mono',monospace;text-transform:uppercase;text-align:center;margin-bottom:8px}
+.banner{background:linear-gradient(135deg,rgba(96,165,250,0.08),rgba(250,204,21,0.06));border:1px solid rgba(96,165,250,0.25);border-radius:12px;padding:16px 20px;margin:20px 0 32px;text-align:center}
+.banner h3{font-size:14px;font-weight:600;color:#e8f0f8;margin-bottom:6px;font-family:'DM Sans',sans-serif}
+.banner p{font-size:12px;color:#6b8ab0;font-family:'DM Mono',monospace;line-height:1.6}
+.hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;margin-bottom:36px;background:#1a2438;border:1px solid #1a2438;border-radius:16px;overflow:hidden}
+.hero-item{text-align:center;padding:20px 6px;background:linear-gradient(135deg,rgba(15,20,30,0.9),rgba(20,28,42,0.7))}
+.hero-label{font-size:9px;letter-spacing:2px;color:#5a6a80;font-family:'DM Mono',monospace;text-transform:uppercase;margin-bottom:4px}
+.hero-val{font-size:26px;font-weight:800;font-family:'Playfair Display',serif;line-height:1.2}
+.hero-sub{font-size:10px;color:#4a5c70;font-family:'DM Mono',monospace;margin-top:2px}
+.timeline{background:rgba(12,15,22,0.7);border:1px solid #1a2438;border-radius:12px;padding:14px 20px;margin-bottom:20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.tl-item{display:flex;align-items:center;gap:5px}
+.tl-dot{width:20px;height:4px;border-radius:2px}
+.tl-text{font-size:10px;color:#6b7a90;font-family:'DM Mono',monospace}
+.chart-box{background:rgba(12,15,22,0.7);border:1px solid #1a2438;border-radius:16px;padding:20px;margin-bottom:20px}
+.chart-box.accent{border-color:rgba(96,165,250,0.2)}
+.chart-box.rmd{border-color:rgba(192,132,252,0.2)}
+.chart-title{font-size:12px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.chart-container{position:relative;width:100%}
+.section{background:rgba(12,15,22,0.7);border:1px solid #1a2438;border-radius:16px;padding:24px;margin-bottom:20px}
+.section-title{font-size:13px;font-weight:600;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px}
+.section-desc{font-size:11px;color:#4a6070;font-family:'DM Mono',monospace;margin-bottom:16px;line-height:1.7}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.field label{display:block;font-size:11px;color:#6b7a90;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.field .input-wrap{position:relative;display:flex;align-items:center}
+.field input[type=number]{width:100%;padding:10px 12px;background:#0d1017;border:1px solid #1e2636;border-radius:6px;color:#c8d6e5;font-family:'DM Mono',monospace;font-size:14px;outline:none;transition:border-color 0.2s}
+.field input[type=number]:focus{border-color:#3b5998}
+.field .prefix,.field .suffix{position:absolute;color:#4a5568;font-family:'DM Mono',monospace;font-size:14px;pointer-events:none}
+.field .prefix{left:12px}
+.field .suffix{right:12px}
+.field input.has-prefix{padding-left:28px}
+.field input.has-suffix{padding-right:28px}
+.field .hint{font-size:10px;color:#3a4a5e;font-family:'DM Mono',monospace;line-height:1.4;margin-top:3px}
+.btn-group{display:flex;gap:8px;margin-top:4px}
+.btn-toggle{flex:1;padding:9px 8px;background:#0d1017;border:1px solid #1e2636;border-radius:6px;color:#5a6a80;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.2s}
+.btn-toggle.active{background:rgba(192,132,252,0.15);border-color:#c084fc;color:#c084fc}
+.footer{text-align:center;margin-top:20px;font-size:11px;color:#3a4860;font-family:'DM Mono',monospace;line-height:1.8;padding-bottom:40px}
+.legend{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:8px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#5a6a80;font-family:'DM Mono',monospace}
+.legend-dot{width:12px;height:3px;border-radius:2px}
+input[type=number]::-webkit-inner-spin-button{opacity:0.3}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sub">Monte Carlo &bull; <span id="simCount">1,000</span> Scenarios</div>
+  <h1>Retirement, Legacy &amp; Estate Forecast</h1>
+  <div class="banner">
+    <h3>&#9999;&#65039; Fill in your values below to personalize this forecast</h3>
+    <p>All fields start with national averages. Replace them with your actual numbers for an accurate projection.<br>
+    Hints below each field show typical ranges. Charts update after you finish editing a field.</p>
+  </div>
+  <div class="hero" id="heroStats"></div>
+  <div class="timeline" id="timeline"></div>
+  <div id="inputSections"></div>
+
+  <div class="chart-box">
+    <div class="chart-title" style="color:#6b7a90">Total Portfolio (401k + Brokerage)</div>
+    <div class="chart-container" style="height:360px"><canvas id="chartTotal"></canvas></div>
+    <div class="legend" id="legendTotal"></div>
+  </div>
+  <div class="chart-box accent">
+    <div class="chart-title" style="color:#60a5fa">Account Breakdown (Median)</div>
+    <div class="chart-container" style="height:240px"><canvas id="chartAccounts"></canvas></div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#60a5fa"></div>401(k)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>Brokerage</div>
+    </div>
+  </div>
+  <div class="chart-box rmd">
+    <div class="chart-title" style="color:#c084fc">Annual RMD / Distributions</div>
+    <div class="chart-container" style="height:200px"><canvas id="chartRMD"></canvas></div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>75th RMD</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#c084fc"></div>Median RMD</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div>25th RMD</div>
+    </div>
+  </div>
+  <div class="footer">
+    Withdrawal order: 401(k) RMD &rarr; 401(k) additional &rarr; Brokerage. Excess RMDs reinvested in brokerage.<br>
+    Brokerage gets stepped-up basis at death. 401(k) follows SECURE Act inherited IRA rules. Owner RMDs begin at 73.<br>
+    This is a Monte Carlo simulation for educational purposes only &mdash; not financial advice. Consult a qualified financial advisor.
+  </div>
+</div>
+
+<script>
+var SIMULATIONS=1000, DEBOUNCE_MS=1500;
+var UNIFORM_TABLE={72:27.4,73:26.5,74:25.5,75:24.6,76:23.7,77:22.9,78:22.0,79:21.1,80:20.2,81:19.4,82:18.5,83:17.7,84:16.8,85:16.0,86:15.2,87:14.4,88:13.7,89:12.9,90:12.2,91:11.5,92:10.8,93:10.1,94:9.5,95:8.9,96:8.4,97:7.8,98:7.3,99:6.8,100:6.4,101:6.0,102:5.6,103:5.2,104:4.9,105:4.6,106:4.3,107:4.1,108:3.9,109:3.7,110:3.5,111:3.4,112:3.3,113:3.1,114:3.0,115:2.9,116:2.8,117:2.7,118:2.5,119:2.3,120:2.0};
+function getRMDDivisor(age){if(age<73)return null;return UNIFORM_TABLE[age]||2.0;}
+
+var params={
+  balance401k:250000,annualContribution401k:10000,
+  balanceBrokerage:50000,annualContributionBrokerage:12000,
+  currentAge:50,retirementAge:65,
+  monthlySpendPhase1:6000,monthlySpendPhase2:4500,phase1Years:15,
+  annualReturnMean:0.07,annualReturnStd:0.12,brokerageReturnMean:0.07,
+  inflationRate:0.03,taxRate:0.22,capGainsRate:0.15,
+  ssYouMonthly:2000,ssYouStartAge:67,ssSpouseMonthly:1000,ssSpouseStartAge:67,ssCOLA:0.025,
+  deferredAnnual:0,deferredYears:0,deferredTaxRate:0.35,
+  deathAge:85,simEndAge:100,heirAge:30,useSpouseRollover:false,
+};
+
+function runSimulations(p){
+  var yd={},sc=0;
+  for(var s=0;s<SIMULATIONS;s++){
+    var b4=p.balance401k,bB=p.balanceBrokerage,dep=false;
+    for(var y=0;y<=(p.simEndAge-p.currentAge);y++){
+      var age=p.currentAge+y;if(age>p.simEndAge)break;
+      if(!yd[age])yd[age]={b4:[],bB:[],bT:[],rmd:[]};
+      yd[age].b4.push(Math.max(0,b4));yd[age].bB.push(Math.max(0,bB));yd[age].bT.push(Math.max(0,b4)+Math.max(0,bB));
+      if(dep&&b4<=0&&bB<=0){yd[age].rmd.push(0);continue;}
+      var u1=Math.random(),u2=Math.random(),z=Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+      var ret=p.annualReturnMean+p.annualReturnStd*z,bRet=p.brokerageReturnMean+p.annualReturnStd*z;
+      if(age<p.retirementAge){
+        b4=b4*(1+ret)+p.annualContribution401k;bB=bB*(1+bRet)+p.annualContributionBrokerage;yd[age].rmd.push(0);
+      }else if(age<p.deathAge){
+        var yr=age-p.retirementAge,inf=Math.pow(1+p.inflationRate,yr);
+        var mo=yr<p.phase1Years?p.monthlySpendPhase1:p.monthlySpendPhase2,need=mo*12*inf;
+        var ssG=0;
+        if(age>=p.ssYouStartAge)ssG+=p.ssYouMonthly*12*Math.pow(1+p.ssCOLA,age-p.ssYouStartAge);
+        if(age>=p.ssSpouseStartAge)ssG+=p.ssSpouseMonthly*12*Math.pow(1+p.ssCOLA,age-p.ssSpouseStartAge);
+        var ssN=ssG*(1-p.taxRate*0.85),dcN=0;
+        if(yr<p.deferredYears)dcN=p.deferredAnnual*(1-p.deferredTaxRate);
+        var gap=Math.max(0,need-ssN-dcN),div=getRMDDivisor(age),rmd=0;
+        if(div&&b4>0)rmd=b4/div;
+        var rmdN=rmd*(1-p.taxRate),rem=gap-rmdN,w4=rmd;
+        if(rem>0){w4+=rem/(1-p.taxRate);rem=0;b4=b4*(1+ret)-w4;if(b4<0){var sh=-b4*(1-p.taxRate);b4=0;bB=bB*(1+bRet)-sh/(1-p.capGainsRate);}else{bB=bB*(1+bRet);}}
+        else{b4=b4*(1+ret)-w4;bB=bB*(1+bRet)+(-rem);}
+        yd[age].rmd.push(rmd);if(b4<=0&&bB<=0)dep=true;
+      }else{
+        bB=bB*(1+bRet);
+        if(p.useSpouseRollover){var ha=p.heirAge+(age-p.currentAge),d=getRMDDivisor(ha),rmd2=0;if(d&&b4>0)rmd2=b4/d;b4=b4*(1+ret)-rmd2;yd[age].rmd.push(rmd2);}
+        else{var left=10-(age-p.deathAge);if(left<=0){yd[age].rmd.push(b4>0?b4:0);b4=0;}else if(left===1){b4=b4*(1+ret);yd[age].rmd.push(b4);b4=0;}else{var rmd3=b4/left;b4=b4*(1+ret)-rmd3;yd[age].rmd.push(rmd3);}}
+        if(b4<0)b4=0;
+      }
+    }
+    var dA=yd[p.deathAge];if(dA&&dA.bT[dA.bT.length-1]>0)sc++;
+  }
+  var cd=[],ages=Object.keys(yd).map(Number).sort(function(a,b){return a-b;});
+  for(var i=0;i<ages.length;i++){
+    var ag=ages[i],dd=yd[ag];
+    var pc=function(arr,pct){var ss=[].concat(arr).sort(function(a,b){return a-b;});return ss[Math.floor(pct*ss.length)]||0;};
+    cd.push({age:ag,p10:pc(dd.bT,.1),p25:pc(dd.bT,.25),p50:pc(dd.bT,.5),p75:pc(dd.bT,.75),p90:pc(dd.bT,.9),k401_50:pc(dd.b4,.5),brok_50:pc(dd.bB,.5),rmd50:pc(dd.rmd,.5),rmd25:pc(dd.rmd,.25),rmd75:pc(dd.rmd,.75)});
+  }
+  return{chartData:cd,successRate:(sc/SIMULATIONS)*100,successCount:sc,totalSims:SIMULATIONS};
+}
+
+function fmt(v){if(v>=1e6)return'$'+(v/1e6).toFixed(1)+'M';if(v>=1e3)return'$'+(v/1e3).toFixed(0)+'K';return'$'+Math.round(v);}
+
+// ── Custom Chart.js plugin for vertical marker lines ──
+// This draws directly on the canvas — no annotation plugin needed, works with category axes
+var verticalLinePlugin = {
+  id: 'verticalLines',
+  afterDraw: function(chart) {
+    var lines = chart.config._verticalLines;
+    if (!lines || !lines.length) return;
+    var ctx = chart.ctx;
+    var xAxis = chart.scales.x;
+    var yAxis = chart.scales.y;
+    var labels = chart.data.labels;
+    var px = 5, pillH = 16, gap = 4;
+
+    // First pass: compute pixel positions and pill widths for all visible lines
+    ctx.font = 'bold 10px "DM Mono", monospace';
+    var items = [];
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var idx = labels.indexOf(line.value);
+      if (idx === -1) continue;
+      var xPixel = xAxis.getPixelForValue(idx);
+      var tw = line.label ? ctx.measureText(line.label).width : 0;
+      var pillW = tw + px * 2;
+      items.push({ line: line, xPixel: xPixel, tw: tw, pillW: pillW, row: 0 });
+    }
+
+    // Sort by x position so we can check overlaps left to right
+    items.sort(function(a, b) { return a.xPixel - b.xPixel; });
+
+    // Assign rows to avoid overlap: for each item check all previous items
+    // and bump to the next row if pills would overlap horizontally on the same row
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var leftEdge = item.xPixel - item.pillW / 2;
+      var rightEdge = item.xPixel + item.pillW / 2;
+      // Find the lowest row that doesn't conflict
+      var row = 0;
+      var conflict = true;
+      while (conflict) {
+        conflict = false;
+        for (var j = 0; j < i; j++) {
+          if (items[j].row !== row) continue;
+          var jLeft = items[j].xPixel - items[j].pillW / 2;
+          var jRight = items[j].xPixel + items[j].pillW / 2;
+          if (leftEdge < jRight + gap && rightEdge > jLeft - gap) {
+            conflict = true;
+            row++;
+            break;
+          }
+        }
+      }
+      item.row = row;
+    }
+
+    // Second pass: draw lines and labels
+    var yTop = yAxis.top;
+    var yBottom = yAxis.bottom;
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var line = item.line;
+      ctx.save();
+
+      // Dashed vertical line
+      ctx.beginPath();
+      ctx.setLineDash(line.dash || [6, 4]);
+      ctx.lineWidth = line.width || 1.5;
+      ctx.strokeStyle = line.color;
+      ctx.moveTo(item.xPixel, yTop);
+      ctx.lineTo(item.xPixel, yBottom);
+      ctx.stroke();
+
+      // Label pill - staggered by row
+      if (line.label) {
+        var labelY = yTop + 8 + item.row * (pillH + gap);
+        ctx.setLineDash([]);
+        ctx.font = 'bold 10px "DM Mono", monospace';
+        ctx.textAlign = 'center';
+
+        // Clamp pill to stay within chart area horizontally
+        var pillLeft = item.xPixel - item.pillW / 2;
+        var pillRight = item.xPixel + item.pillW / 2;
+        var chartLeft = xAxis.left;
+        var chartRight = xAxis.right;
+        var drawX = item.xPixel;
+        if (pillLeft < chartLeft) drawX += (chartLeft - pillLeft) + 2;
+        if (pillRight > chartRight) drawX -= (pillRight - chartRight) + 2;
+
+        // Background pill
+        ctx.fillStyle = 'rgba(8,11,18,0.85)';
+        ctx.beginPath();
+        ctx.roundRect(drawX - item.pillW / 2, labelY, item.pillW, pillH, 4);
+        ctx.fill();
+        // Border
+        ctx.strokeStyle = line.color;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // Text
+        ctx.fillStyle = line.color;
+        ctx.fillText(line.label, drawX, labelY + pillH - 4);
+      }
+      ctx.restore();
+    }
+  }
+};
+Chart.register(verticalLinePlugin);
+
+// Build marker config arrays for each chart type
+function getMainMarkers() {
+  var p = params, markers = [];
+  markers.push({ value: p.retirementAge, color: '#60a5fa', label: 'Retire' });
+  if (p.deferredYears > 0) {
+    markers.push({ value: p.retirementAge, color: '#fb923c', label: 'DC Start', dash: [4, 3] });
+    markers.push({ value: p.retirementAge + p.deferredYears, color: '#fb923c', label: 'DC Ends', dash: [4, 3] });
+  }
+  if (p.ssYouStartAge > p.retirementAge && p.ssYouStartAge < p.deathAge) {
+    markers.push({ value: p.ssYouStartAge, color: '#34d399', label: 'SS Starts' });
+  }
+  markers.push({ value: p.deathAge, color: '#c084fc', label: 'Death', width: 2 });
+  // Deduplicate overlapping retire + DC start: if both at same age, show combined label
+  if (p.deferredYears > 0) {
+    markers = markers.filter(function(m) { return !(m.label === 'DC Start' && m.value === p.retirementAge); });
+    var retireMarker = markers.find(function(m) { return m.label === 'Retire'; });
+    if (retireMarker) retireMarker.label = 'Retire / DC';
+  }
+  return markers;
+}
+
+function getRMDMarkers() {
+  return [{ value: params.deathAge, color: '#c084fc', label: 'Inherited', width: 2 }];
+}
+
+// ── Charts ──
+var chartTotal = null, chartAccounts = null, chartRMD = null;
+
+function baseOpts() {
+  return {
+    responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(15,18,25,0.95)', borderColor: '#2a3040', borderWidth: 1,
+        titleFont: { family: 'DM Mono', size: 12 }, bodyFont: { family: 'DM Mono', size: 11 }, padding: 12,
+        callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + fmt(ctx.parsed.y); } }
+      }
+    },
+    scales: {
+      x: { grid: { color: '#141c2a' }, ticks: { font: { family: 'DM Mono', size: 11 }, color: '#4a5c70', maxTicksLimit: 15 }, border: { color: '#1a2438' } },
+      y: { grid: { color: '#141c2a' }, ticks: { font: { family: 'DM Mono', size: 11 }, color: '#4a5c70', callback: function(v) { return fmt(v); } }, border: { color: '#1a2438' } }
+    }
+  };
+}
+
+function initCharts() {
+  var o1 = baseOpts();
+  chartTotal = new Chart(document.getElementById('chartTotal'), {
+    type: 'line', _verticalLines: getMainMarkers(),
+    data: { labels: [], datasets: [
+      { label: '90th', borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.08)', fill: true, borderWidth: 1, pointRadius: 0, tension: 0.3 },
+      { label: '75th', borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.08)', fill: true, borderWidth: 1, pointRadius: 0, tension: 0.3 },
+      { label: 'Median', borderColor: '#facc15', backgroundColor: 'transparent', fill: false, borderWidth: 2.5, pointRadius: 0, tension: 0.3 },
+      { label: '25th', borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.06)', fill: true, borderWidth: 1, pointRadius: 0, tension: 0.3 },
+      { label: '10th', borderColor: '#ef4444', backgroundColor: 'transparent', fill: false, borderWidth: 1, borderDash: [4, 3], pointRadius: 0, tension: 0.3 },
+    ] }, options: o1
+  });
+
+  chartAccounts = new Chart(document.getElementById('chartAccounts'), {
+    type: 'line', _verticalLines: getMainMarkers(),
+    data: { labels: [], datasets: [
+      { label: '401(k)', borderColor: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.1)', fill: true, borderWidth: 2, pointRadius: 0, tension: 0.3 },
+      { label: 'Brokerage', borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', fill: true, borderWidth: 2, pointRadius: 0, tension: 0.3 },
+    ] }, options: baseOpts()
+  });
+
+  chartRMD = new Chart(document.getElementById('chartRMD'), {
+    type: 'line', _verticalLines: getRMDMarkers(),
+    data: { labels: [], datasets: [
+      { label: '75th RMD', borderColor: '#a78bfa', backgroundColor: 'rgba(192,132,252,0.1)', fill: true, borderWidth: 1, pointRadius: 0, tension: 0.3 },
+      { label: 'Median RMD', borderColor: '#c084fc', backgroundColor: 'transparent', fill: false, borderWidth: 2, pointRadius: 0, tension: 0.3 },
+      { label: '25th RMD', borderColor: '#7c3aed', backgroundColor: 'transparent', fill: false, borderWidth: 1, borderDash: [4, 3], pointRadius: 0, tension: 0.3 },
+    ] }, options: baseOpts()
+  });
+
+  document.getElementById('legendTotal').innerHTML = [
+    { c: '#22c55e', l: '90th' }, { c: '#4ade80', l: '75th' }, { c: '#facc15', l: 'Median' }, { c: '#f97316', l: '25th' }, { c: '#ef4444', l: '10th' }
+  ].map(function(x) { return '<div class="legend-item"><div class="legend-dot" style="background:' + x.c + '"></div>' + x.l + '</div>'; }).join('');
+}
+
+function updateCharts(sim) {
+  var cd = sim.chartData, labels = cd.map(function(d) { return d.age; });
+
+  // Update vertical line markers
+  chartTotal.config._verticalLines = getMainMarkers();
+  chartAccounts.config._verticalLines = getMainMarkers();
+  chartRMD.config._verticalLines = getRMDMarkers();
+
+  chartTotal.data.labels = labels;
+  chartTotal.data.datasets[0].data = cd.map(function(d) { return d.p90; });
+  chartTotal.data.datasets[1].data = cd.map(function(d) { return d.p75; });
+  chartTotal.data.datasets[2].data = cd.map(function(d) { return d.p50; });
+  chartTotal.data.datasets[3].data = cd.map(function(d) { return d.p25; });
+  chartTotal.data.datasets[4].data = cd.map(function(d) { return d.p10; });
+  chartTotal.update();
+
+  chartAccounts.data.labels = labels;
+  chartAccounts.data.datasets[0].data = cd.map(function(d) { return d.k401_50; });
+  chartAccounts.data.datasets[1].data = cd.map(function(d) { return d.brok_50; });
+  chartAccounts.update();
+
+  var rmdData = cd.filter(function(d) { return d.age >= Math.min(73, params.deathAge); });
+  chartRMD.data.labels = rmdData.map(function(d) { return d.age; });
+  chartRMD.data.datasets[0].data = rmdData.map(function(d) { return d.rmd75; });
+  chartRMD.data.datasets[1].data = rmdData.map(function(d) { return d.rmd50; });
+  chartRMD.data.datasets[2].data = rmdData.map(function(d) { return d.rmd25; });
+  chartRMD.update();
+}
+
+// ── Hero ──
+function updateHero(sim) {
+  var p = params, sColor = sim.successRate >= 80 ? '#22c55e' : sim.successRate >= 60 ? '#facc15' : '#ef4444';
+  var dd = sim.chartData.find(function(d) { return d.age === p.deathAge; }) || {};
+  var e401 = dd.k401_50 || 0, eBrok = dd.brok_50 || 0;
+  var tRMDs = sim.chartData.filter(function(d) { return d.age >= p.deathAge; }).reduce(function(s, d) { return s + (d.rmd50 || 0); }, 0);
+  var endB = (sim.chartData.find(function(d) { return d.age === p.simEndAge; }) || {}).brok_50 || 0;
+  var stats = [
+    { l: 'Success', v: sim.successRate.toFixed(1) + '%', s: 'to age ' + p.deathAge, c: sColor },
+    { l: 'Retire At', v: p.retirementAge, s: (p.retirementAge - p.currentAge) + 'yr', c: '#60a5fa' },
+    { l: '401(k) at Death', v: fmt(e401), s: '→ RMD burn-down', c: '#c084fc' },
+    { l: 'Brokerage at Death', v: fmt(eBrok), s: '→ heirs (step-up)', c: '#f59e0b' },
+    { l: 'Total RMDs', v: fmt(tRMDs), s: 'heir distributions', c: '#a78bfa' },
+    { l: 'Brokerage ' + p.simEndAge, v: fmt(endB), s: 'heir inheritance', c: '#fbbf24' },
+  ];
+  document.getElementById('heroStats').innerHTML = stats.map(function(s) {
+    return '<div class="hero-item"><div class="hero-label">' + s.l + '</div><div class="hero-val" style="color:' + s.c + '">' + s.v + '</div><div class="hero-sub">' + s.s + '</div></div>';
+  }).join('');
+}
+
+function updateTimeline() {
+  var p = params, dEnd = p.retirementAge + p.deferredYears;
+  var items = [{ c: '#60a5fa', l: 'Work (→' + p.retirementAge + ')' }];
+  if (p.deferredYears > 0) items.push({ c: '#fb923c', l: 'DC (' + p.retirementAge + '→' + dEnd + ')' });
+  items.push({ c: '#34d399', l: 'SS (' + p.ssYouStartAge + '→' + p.deathAge + ')' },
+    { c: '#c084fc', l: 'RMD (' + p.deathAge + '→' + (p.useSpouseRollover ? p.simEndAge : p.deathAge + 10) + ')' },
+    { c: '#fbbf24', l: 'Brokerage (always)' });
+  document.getElementById('timeline').innerHTML = items.map(function(i) {
+    return '<div class="tl-item"><div class="tl-dot" style="background:' + i.c + '"></div><span class="tl-text">' + i.l + '</span></div>';
+  }).join('');
+}
+
+// ── Inputs ──
+var FIELD_HINTS = { balance401k: "Avg American 50-59: ~$250K", annualContribution401k: "2025 limit: $23,500 (+$7,500 catch-up 50+)", balanceBrokerage: "Median US household: ~$35-50K in taxable accounts", annualContributionBrokerage: "Varies widely — enter what you save annually", currentAge: "Your current age", retirementAge: "Average American retires at 64-65", monthlySpendPhase1: "Avg retiree household: ~$4,800-6,000/mo", monthlySpendPhase2: "Spending typically drops 20-25% after 75", phase1Years: "Higher-spend active years of retirement", ssYouMonthly: "Avg SS benefit 2025: ~$1,976. Max at 67: ~$3,822", ssYouStartAge: "62 (reduced), 67 (full), 70 (max delayed credits)", ssSpouseMonthly: "Own benefit or 50% of spouse's PIA, whichever higher", ssSpouseStartAge: "Can differ from yours", deferredAnnual: "Set to $0 if you don't have deferred comp", deferredYears: "Typical payout period post-separation", deathAge: "US life expectancy: ~77 (male), ~80 (female)", heirAge: "Affects spouse rollover RMD calculations", simEndAge: "How far to project the legacy growth", capGainsRate: "15% for most; 20% if income >$500K", deferredTaxRate: "Taxed as ordinary income; often 32-37% bracket", ssCOLA: "Historical avg ~2.5%. Recent years higher.", annualReturnMean: "S&P 500 historical: ~10%. Balanced 60/40: ~7%", brokerageReturnMean: "May differ if allocation is different", annualReturnStd: "S&P 500: ~15%. Balanced: ~10-12%", inflationRate: "Long-term avg: ~3%. Recent: 3-4%", taxRate: "Effective federal+state on 401k withdrawals" };
+
+var sections = [
+  { title: 'About You', color: '#60a5fa', border: 'rgba(96,165,250,0.2)', fields: [
+    { l: 'Current Age', f: 'currentAge', step: 1, min: 25, max: 80 }, { l: 'Retirement Age', f: 'retirementAge', step: 1, min: 30, max: 80 },
+    { l: 'Death Age (both spouses)', f: 'deathAge', step: 1, min: 50, max: 99, hint: 'US avg: 77 (M), 80 (F). Healthy couple plan to 85-90.' }] },
+  { title: '401(k) / IRA', color: '#60a5fa', border: 'rgba(96,165,250,0.2)', fields: [
+    { l: 'Current Balance', f: 'balance401k', prefix: '$', step: 25000, min: 0 }, { l: 'Annual Contribution', f: 'annualContribution401k', prefix: '$', step: 1000, min: 0 }] },
+  { title: 'Taxable Brokerage', color: '#f59e0b', border: 'rgba(245,158,11,0.2)', desc: 'Joint taxable account. Heirs receive stepped-up cost basis — no forced distributions after death.', fields: [
+    { l: 'Current Balance', f: 'balanceBrokerage', prefix: '$', step: 10000, min: 0 }, { l: 'Annual Contribution', f: 'annualContributionBrokerage', prefix: '$', step: 5000, min: 0 },
+    { l: 'Cap Gains Tax Rate', f: 'capGainsRate', suffix: '%', step: 1, pct: true }] },
+  { title: 'Monthly Spending (After Tax)', color: '#8899b0', border: '#1a2438', fields: [
+    { l: 'Phase 1 Monthly', f: 'monthlySpendPhase1', prefix: '$', step: 500, min: 0 }, { l: 'Phase 2 Monthly', f: 'monthlySpendPhase2', prefix: '$', step: 500, min: 0 },
+    { l: 'Phase 1 Duration', f: 'phase1Years', suffix: 'yr', step: 1, min: 1, max: 40, hint: 'Active early retirement years before spending drops' }] },
+  { title: 'Deferred Compensation', color: '#fb923c', border: 'rgba(245,158,11,0.2)', desc: "Leave annual payout at $0 if you don't have deferred comp.", fields: [
+    { l: 'Annual Payout', f: 'deferredAnnual', prefix: '$', step: 5000, min: 0 }, { l: 'Duration', f: 'deferredYears', suffix: 'yr', step: 1, min: 0, max: 20 },
+    { l: 'DC Tax Rate', f: 'deferredTaxRate', suffix: '%', step: 1, pct: true }] },
+  { title: 'Social Security', color: '#34d399', border: 'rgba(52,211,153,0.2)', desc: 'Check your estimate at ssa.gov/myaccount. Spousal benefit is the higher of their own or 50% of yours.', fields: [
+    { l: 'Your SS (monthly)', f: 'ssYouMonthly', prefix: '$', step: 50, min: 0 }, { l: 'Your Start Age', f: 'ssYouStartAge', step: 1, min: 62, max: 70 },
+    { l: 'Spouse SS (monthly)', f: 'ssSpouseMonthly', prefix: '$', step: 50, min: 0 }, { l: 'Spouse Start Age', f: 'ssSpouseStartAge', step: 1, min: 62, max: 70 },
+    { l: 'SS COLA', f: 'ssCOLA', suffix: '%', step: 0.25, pct: true }] },
+  { title: 'Legacy & Inherited RMDs', color: '#c084fc', border: 'rgba(192,132,252,0.2)', desc: '401(k) follows SECURE Act rules after death. Non-spouse heirs must distribute within 10 years. Spouse can roll over.', fields: [
+    { l: 'Sim End Age', f: 'simEndAge', step: 1, min: 86, max: 120 }, { l: "Heir's Current Age", f: 'heirAge', step: 1, min: 1, max: 70 },
+    { l: '__beneficiary__', f: 'useSpouseRollover' }] },
+  { title: 'Market Assumptions', color: '#8899b0', border: '#1a2438', desc: 'These defaults reflect long-term US market averages. Adjust if your portfolio is more conservative or aggressive.', fields: [
+    { l: '401k Mean Return', f: 'annualReturnMean', suffix: '%', step: 0.5, pct: true }, { l: 'Brokerage Mean Return', f: 'brokerageReturnMean', suffix: '%', step: 0.5, pct: true },
+    { l: 'Volatility (Std Dev)', f: 'annualReturnStd', suffix: '%', step: 0.5, pct: true }, { l: 'Inflation Rate', f: 'inflationRate', suffix: '%', step: 0.25, pct: true },
+    { l: 'Income Tax Rate', f: 'taxRate', suffix: '%', step: 1, pct: true }] },
+];
+
+var debounceTimer = null;
+function scheduleUpdate() { clearTimeout(debounceTimer); debounceTimer = setTimeout(runAndRender, DEBOUNCE_MS); }
+function commitNow() { clearTimeout(debounceTimer); runAndRender(); }
+function runAndRender() { var sim = runSimulations(params); updateHero(sim); updateTimeline(); updateCharts(sim); }
+
+function buildInputSections() {
+  var container = document.getElementById('inputSections'), html = '';
+  for (var si = 0; si < sections.length; si++) {
+    var sec = sections[si];
+    html += '<div class="section" style="border-color:' + sec.border + '">';
+    html += '<div class="section-title" style="color:' + sec.color + '">' + sec.title + '</div>';
+    if (sec.desc) html += '<div class="section-desc">' + sec.desc + '</div>';
+    html += '<div class="fields">';
+    for (var fi = 0; fi < sec.fields.length; fi++) {
+      var f = sec.fields[fi];
+      if (f.l === '__beneficiary__') {
+        html += '<div class="field"><label style="color:#6b7a90">Beneficiary Type</label><div class="btn-group">';
+        html += '<button class="btn-toggle' + (params.useSpouseRollover ? '' : ' active') + '" id="btnNonSpouse" onclick="setBeneficiary(false)">Non-Spouse (10yr)</button>';
+        html += '<button class="btn-toggle' + (params.useSpouseRollover ? ' active' : '') + '" id="btnSpouse" onclick="setBeneficiary(true)">Spouse Rollover</button>';
+        html += '</div><div class="hint">Non-spouse: 10-year mandatory distribution. Spouse: rollover to own IRA.</div></div>';
+        continue;
+      }
+      var val = f.pct ? Math.round(params[f.f] * 1000) / 10 : params[f.f];
+      var hint = f.hint || FIELD_HINTS[f.f] || '';
+      html += '<div class="field"><label>' + f.l + '</label><div class="input-wrap">';
+      if (f.prefix) html += '<span class="prefix">' + f.prefix + '</span>';
+      html += '<input type="number" class="' + (f.prefix ? 'has-prefix' : '') + ' ' + (f.suffix ? 'has-suffix' : '') + '" value="' + val + '"';
+      html += ' step="' + (f.step || 1) + '"';
+      if (f.min != null) html += ' min="' + f.min + '"'; if (f.max != null) html += ' max="' + f.max + '"';
+      html += ' data-field="' + f.f + '"'; if (f.pct) html += ' data-pct="1"';
+      html += ' oninput="handleInput(this)" onblur="handleBlur(this)">';
+      if (f.suffix) html += '<span class="suffix">' + f.suffix + '</span>';
+      html += '</div>'; if (hint) html += '<div class="hint">' + hint + '</div>'; html += '</div>';
+    }
+    html += '</div></div>';
+  }
+  container.innerHTML = html;
+}
+
+function handleInput(el) { var v = parseFloat(el.value); if (isNaN(v)) return; if (el.dataset.pct) v /= 100; params[el.dataset.field] = v; scheduleUpdate(); }
+function handleBlur(el) { var v = parseFloat(el.value); if (isNaN(v)) return; if (el.dataset.pct) v /= 100; params[el.dataset.field] = v; commitNow(); }
+function setBeneficiary(isSpouse) { params.useSpouseRollover = isSpouse; document.getElementById('btnNonSpouse').className = 'btn-toggle' + (isSpouse ? '' : ' active'); document.getElementById('btnSpouse').className = 'btn-toggle' + (isSpouse ? ' active' : ''); commitNow(); }
+
+document.addEventListener('DOMContentLoaded', function() { buildInputSections(); initCharts(); runAndRender(); });
+</script>
+</body>
+</html>
